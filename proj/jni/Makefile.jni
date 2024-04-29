@@ -1,0 +1,32 @@
+SRCDIR=../..
+APIDIR=../../..
+
+# Set as necessary for your platform
+# Debian or Ubuntu Linux
+LIB=libSerialTransportNative.so.0
+CFLAGS  += -I$(SRCDIR)/src/api
+CFLAGS  += -I/usr/lib/jvm/java-6-sun/include -I/usr/lib/jvm/java-6-sun/include/linux
+CFLAGS  += -I/usr/lib/jvm/java-6-openjdk/include -I/usr/lib/jvm/java-6-openjdk/include/linux
+CFLAGS  += -I/usr/lib/jvm/sun-jdk-1.6/include/ -I/usr/lib/jvm/sun-jdk-1.6/include/linux
+CFLAGS  += -fpic
+LDFLAGS += -shared -Wl,-soname,$(LIB)
+
+# Mac OS X
+#LIB      = libSerialTransportNative.dylib
+#CFLAGS  += -FJavaVM -FIOKit -dynamiclib -arch ppc -arch i386 -arch x86_64
+#LDFLAGS += -dynamiclib -arch ppc -arch i386 -arch x86_64
+
+DBG = -O2
+WARNS= -Werror -Wall
+
+CFLAGS += $(DBG) $(WARNS)
+
+OBJS += $(SRCDIR)/src/jni/nativeSerial.o
+OBJS += $(SRCDIR)/src/api/serial_transport_posix.o
+OBJS += $(SRCDIR)/src/api/tmr_strerror.o
+
+$(LIB): $(OBJS)
+	$(CC) $(LDFLAGS) -o $(LIB) $(OBJS)
+
+clean:
+	rm -f $(LIB) $(OBJS)
