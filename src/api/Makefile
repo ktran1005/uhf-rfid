@@ -42,7 +42,7 @@ HEADERS += tmr_utils.h
 
 DBG ?= -g
 CWARN = -Wall
-CFLAGS += -I. $(DBG) $(CWARN)
+CFLAGS += -I. -lcurl $(DBG) $(CWARN)
 
 ifneq ($(PLATFORM),EMBEDDED)
 PROGS += demo
