@@ -80,13 +80,13 @@ int main(int argc, char *argv[])
 
   ret = TMR_connect(rp);
   checkerr(rp, ret, 1, "connecting reader");
-  printf("connect successfully\n");
+  printf("connected successfully\n");
 
   region = 0x0D;
   //ret = TMR_paramSet(rp, TMR_paramID("/reader/region/id"), &region);
   ret = TMR_paramSet(rp, TMR_PARAM_REGION_ID, &region);
   checkerr(rp, ret, 1, "setting region");
-  printf("setting region succesfully\n");
+  printf("set region succesfully\n");
   
 
   TMR_Status status;
@@ -105,55 +105,65 @@ int main(int argc, char *argv[])
     printf("Error setting read plan 2: %s\n", TMR_strerr(rp, status));
     return;
   }
-
-  // Enabling metadata
-  // ret = TMR_paramSet(rp, TMR_TRD_METADATA_FLAG_DATA, &((uint16_t)(
-  //   TMR_TRD_METADATA_FLAG_READCOUNT | 
-  //   TMR_TRD_METADATA_FLAG_RSSI |
-  //   TMR_TRD_METADATA_FLAG_PHASE |
-  //   TMR_TRD_METADATA_FLAG_FREQUENCY |
-  //   TMR_TRD_METADATA_FLAG_TIMESTAMP
-  // )));
   
-  // if (TMR_SUCCESS != ret)
+  //-----------------------------------------------------------------------
+  // Version 1: Original Version
+
+  // Read tags
+  // printf("trying to read data\n");
+  // status = TMR_read(rp, 500, NULL); // 500ms read time
+  // if (status != TMR_SUCCESS)
   // {
-  //   errx(1, "Error setting metadata flags: %s\n", TMR_strerr(rp, ret));
+  //   printf("Error reading tags: %s\n", TMR_strerr(rp, ret));
+  //   return;
   // }
 
 
-  
-  // Read tags
-  printf("trying to read data\n");
-  status = TMR_read(rp, 500, NULL); // 500ms read time
-  if (status != TMR_SUCCESS)
+  // while (TMR_hasMoreTags(rp) == TMR_SUCCESS)
+  // {
+  //   TMR_TagReadData trd;
+  //   TMR_getNextTag(rp, &trd);
+  //   char epcStr[128];
+  //   ret = TMR_getNextTag(rp, &trd);
+  //   if (TMR_SUCCESS != ret) 
+  //   {
+  //     errx(1, "Error getting tag: %s\n", TMR_strerr(rp, ret));
+  //   }
+  //   TMR_bytesToHex(trd.tag.epc, trd.tag.epcByteCount, epcStr);
+  //   printf("EPC: %s, RSSI: %d dBm\n", epcStr, trd.rssi);
+  // }
+
+  // TMR_destroy(rp);
+  // return 0;
+ 
+  // ---------------------------------------------------------------------
+
+  // Version 2: Modified Version
+
+  while (true)
   {
-    printf("Error reading tags: %s\n", TMR_strerr(rp, ret));
-    return;
-  }
+      // Read tags
+      printf("trying to read data\n");
+      status = TMR_read(rp, 1000, NULL); // 500ms read time
+      if (status != TMR_SUCCESS)
+      {
+        printf("Error reading tags: %s\n", TMR_strerr(rp, ret));
+        return;
+      }
+      TMR_TagReadData trd;
+      char epcStr[128];
+      ret = TMR_getNextTag(rp, &trd);
+      // checkerr(rp, ret, 1, "fetching tag");
+      if (TMR_SUCCESS != ret) 
+      {
+        printf("No tag detected....\n");
+        continue;
+        // errx(1, "Error getting tag: %s\n", TMR_strerr(rp, ret));
+      }
 
-  TMR_TagReadData trd;
-  char epcStr[128];
-
-  TMR_TRD_init(&trd);
-  TMR_getNextTag(rp, &trd);
-  TMR_bytesToHex(trd.tag.epc, trd.tag.epcByteCount, epcStr);
-
-  printf("EPC: %s, RSSI: %d dBm\n", epcStr, trd.rssi);
-
-  
-
-  while (TMR_hasMoreTags(rp) == TMR_SUCCESS)
-  {
-    // TMR_TagReadData trd;
-    TMR_getNextTag(rp, &trd);
-    char epcStr[128];
-    ret = TMR_getNextTag(rp, &trd);
-    if (TMR_SUCCESS != ret) 
-    {
-      errx(1, "Error getting tag: %s\n", TMR_strerr(rp, ret));
-    }
-    TMR_bytesToHex(trd.tag.epc, trd.tag.epcByteCount, epcStr);
-    printf("EPC: %s, RSSI: %d dBm\n", epcStr, trd.rssi);
+      TMR_bytesToHex(trd.tag.epc, trd.tag.epcByteCount, epcStr);
+      printf("EPC: %s, RSSI: %d dBm\n", epcStr, trd.rssi);
+      // sleep(1);
   }
 
   TMR_destroy(rp);
