@@ -33,9 +33,10 @@ void sendPutRequest(const char *relative_time, const char *interrogator_time, co
                 relative_time, interrogator_time, db_password, freeform);
  
         // Set the URL for the PUT request
-        curl_easy_setopt(curl, CURLOPT_URL, "http://localhost:5000/api/rssi");
+        curl_easy_setopt(curl, CURLOPT_URL, "https://localhost:5000/api/rssi");
  
         // Specify the PUT data
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0);
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, jsonData);
  
         // Set the content type header
@@ -209,7 +210,7 @@ int main(int argc, char *argv[])
       TMR_bytesToHex(trd.tag.epc, trd.tag.epcByteCount, epcStr);
       printf("EPC: %s, RSSI: %d dBm\n", epcStr, trd.rssi);
       printf("Sending data to the database...\n");
-      sendPutRequest("2024-04-19T12:00:00Z", "2024-04-19T12:00:05Z", "kapilrocks", trd.rssi);
+      sendPutRequest("2024-04-19T12:00:00Z", "2024-04-19T12:00:05Z", "kapilrocks", "this is a test");
   }
 
   TMR_destroy(rp);
