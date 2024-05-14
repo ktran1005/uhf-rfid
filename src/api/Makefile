@@ -42,7 +42,8 @@ HEADERS += tmr_utils.h
 
 DBG ?= -g
 CWARN = -Wall
-CFLAGS += -I. -lcurl $(DBG) $(CWARN)
+CFLAGS += -I. $(DBG) $(CWARN) -lcurl
+LDFLAGS += -lcurl
 
 ifneq ($(PLATFORM),EMBEDDED)
 PROGS += demo
@@ -72,7 +73,7 @@ $(LIB): $(OBJS)
 
 ../samples/read.o: $(HEADERS)
 read: ../samples/read.o $(LIB)
-	$(CC) $(CFLAGS) -o $@ $^
+	$(CC) -o $@ $^ $(CFLAGS)
 
 ../samples/blockpermalock.o: $(HEADERS)
 blockpermalock: ../samples/blockpermalock.o $(LIB)
