@@ -8,6 +8,52 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+// #include <easy.h>
+#include <curl/curl.h>
+
+void sendPutRequest(const char *relative_time, const char *interrogator_time, const char *db_password, const char *freeform) {
+    CURL *curl;
+    CURLcode res;
+    struct curl_slist *headers = NULL;
+ 
+    // Initialize a CURL handle
+    curl = curl_easy_init();
+    if(curl) {
+        // Create the JSON string
+        char *jsonData = (char *)malloc(1024 * sizeof(char)); // Adjust size as needed
+        if (!jsonData) {
+            printf("Failed to allocate memory for JSON data.\n");
+            return;
+        }
+ 
+        sprintf(jsonData, "[{\"data\":{\"relative_time\":\"%s\",\"interrogator_time\":\"%s\",\"db_password\":\"%s\",\"freeform\":\"%s\"}}]",
+                relative_time, interrogator_time, db_password, freeform);
+ 
+        // Set the URL for the PUT request
+        curl_easy_setopt(curl, CURLOPT_URL, "http://localhost:5000/api/rssi");
+ 
+        // Specify the PUT data
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, jsonData);
+ 
+        // Set the content type header
+        headers = curl_slist_append(headers, "Content-Type: application/json; charset=UTF-8");
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+ 
+        // Perform the PUT request
+        res = curl_easy_perform(curl);
+        if(res != CURLE_OK) {
+            fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+        }
+ 
+        // Cleanup
+        free(jsonData);
+        curl_slist_free_all(headers);
+        curl_easy_cleanup(curl);
+    }
+}
 
 void errx(int exitval, const char *fmt, ...)
 {
@@ -158,12 +204,12 @@ int main(int argc, char *argv[])
       {
         printf("No tag detected....\n");
         continue;
-        // errx(1, "Error getting tag: %s\n", TMR_strerr(rp, ret));
       }
 
       TMR_bytesToHex(trd.tag.epc, trd.tag.epcByteCount, epcStr);
       printf("EPC: %s, RSSI: %d dBm\n", epcStr, trd.rssi);
-      // sleep(1);
+      printf("Sending data to the database...\n");
+      sendPutRequest("2024-04-19T12:00:00Z", "2024-04-19T12:00:05Z", "kapilrocks", trd.rssi);
   }
 
   TMR_destroy(rp);
