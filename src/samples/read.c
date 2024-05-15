@@ -14,7 +14,22 @@
 // #include <easy.h>
 #include <curl/curl.h>
 
-void sendPutRequest(const char *relative_time, const char *interrogator_time, const char *db_password, const char *freeform) {
+// Function to get the current epoch time in microseconds
+long long get_epoch_time_microseconds() {
+    struct timeval tv;
+
+    // Get the current time
+    if (gettimeofday(&tv, NULL) == -1) {
+        perror("gettimeofday");
+        return -1;
+    }
+
+    // Calculate the current epoch time in microseconds
+    long long microseconds = (long long)tv.tv_sec * 1000000LL + (long long)tv.tv_usec;
+
+    return microseconds;
+}
+void sendPutRequest(const long long relative_time, const long long interrogator_time, const char *db_password, const char *freeform) {
     CURL *curl;
     CURLcode res;
     struct curl_slist *headers = NULL;
@@ -28,12 +43,13 @@ void sendPutRequest(const char *relative_time, const char *interrogator_time, co
             printf("Failed to allocate memory for JSON data.\n");
             return;
         }
- 
-        sprintf(jsonData, "[{\"data\":{\"relative_time\":\"%s\",\"interrogator_time\":\"%s\",\"db_password\":\"%s\",\"freeform\":\"%s\"}}]",
+       
+        sprintf(jsonData, "[{\"data\":{\"relative_time\":\"%lld\",\"interrogator_time\":\"%lld\",\"db_password\":\"%s\",\"freeform\":\"%s\"}}]",
                 relative_time, interrogator_time, db_password, freeform);
  
+        printf("jsonData: %s\n", jsonData);
         // Set the URL for the PUT request
-        curl_easy_setopt(curl, CURLOPT_URL, "https://localhost:5000/api/rssi");
+        curl_easy_setopt(curl, CURLOPT_URL, "https://localhost:5001/api/rssi");
  
         // Specify the PUT data
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0);
@@ -42,7 +58,8 @@ void sendPutRequest(const char *relative_time, const char *interrogator_time, co
         // Set the content type header
         headers = curl_slist_append(headers, "Content-Type: application/json; charset=UTF-8");
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
- 
+ 	//curl_easy_setopt(curl, CURLOPT_PUT,1);
+	curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PUT");
         // Perform the PUT request
         res = curl_easy_perform(curl);
         if(res != CURLE_OK) {
@@ -186,9 +203,10 @@ int main(int argc, char *argv[])
   // ---------------------------------------------------------------------
 
   // Version 2: Modified Version
-
+  long long start_time = get_epoch_time_microseconds();
   while (true)
   {
+      char buffer[100] = {0};
       // Read tags
       printf("trying to read data\n");
       status = TMR_read(rp, 1000, NULL); // 500ms read time
@@ -210,7 +228,10 @@ int main(int argc, char *argv[])
       TMR_bytesToHex(trd.tag.epc, trd.tag.epcByteCount, epcStr);
       printf("EPC: %s, RSSI: %d dBm\n", epcStr, trd.rssi);
       printf("Sending data to the database...\n");
-      sendPutRequest("2024-04-19T12:00:00Z", "2024-04-19T12:00:05Z", "kapilrocks", "this is a test");
+      sprintf(buffer, "%d", trd.rssi);
+      printf("buffer: %s\n", buffer);
+      sendPutRequest(get_epoch_time_microseconds() - start_time, get_epoch_time_microseconds(), "kapilrocks", buffer);
+      // sendPutRequest("2024-04-19T12:00:00Z", "2024-04-19T12:00:05Z", "kapilrocks", "this is a test");
   }
 
   TMR_destroy(rp);
